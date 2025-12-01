@@ -1,0 +1,7 @@
+{
+  "semi": true, // 语句结尾加分号
+  "singleQuote": true, // 使用单引号
+  "tabWidth": 2, // 缩进2个空格
+  "trailingComma": "es5", // 对象/数组最后一个元素加逗号
+  "printWidth": 120 // 一行最多120个字符
+}
