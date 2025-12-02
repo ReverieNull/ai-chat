@@ -2,7 +2,13 @@
 import { useState } from 'react';
 import { Message } from '@/types';
 
-export default function MessageList({ messages }: { messages: Message[] }) {
+// 🌟 核心修复：统一 Ref 类型（匹配 useRef 创建的 RefObject<HTMLDivElement | null>）
+interface MessageListProps {
+  messages: Message[];
+  chatContainerRef: React.RefObject<HTMLDivElement | null>; // 正确类型：允许 Ref 内部值为 null
+}
+
+export default function MessageList({ messages, chatContainerRef }: MessageListProps) {
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
 
   const copyMessageContent = (msg: Message) => {
@@ -25,9 +31,12 @@ export default function MessageList({ messages }: { messages: Message[] }) {
     );
 
   return (
-    <div className="flex-1 overflow-y-auto p-5 pt-6 space-y-8 message-list 
+    <div 
+      className="flex-1 overflow-y-auto p-5 pt-6 space-y-8 message-list 
       scrollbar scrollbar-thumb-teal-300/30 scrollbar-track-transparent scrollbar-w-1.5
-      bg-white/5 backdrop-blur-xl">
+      bg-white/5 backdrop-blur-xl"
+      ref={chatContainerRef} // 类型完全匹配，无报错
+    >
       {messages.map((msg) => (
         <div
           key={msg.id}

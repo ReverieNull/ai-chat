@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { AuthProvider, useAuth } from '@/components/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/hooks/useAuth';
 import { useViewport } from '@/components/hooks/useViewport';
 import { useModels } from '@/components/hooks/useModels';
 import { useChat } from '@/components/hooks/useChat';
@@ -9,60 +10,105 @@ import Header from '@/components/chat/Header';
 import MessageList from '@/components/chat/MessageList';
 import MessageInput from '@/components/chat/MessageInput';
 import FullScreenSpin from '@/components/FullScreenSpin';
+import { Message, AiModel } from '@/types';
+
+// 补全 SidebarProps
+interface SidebarProps {
+  isOpen: boolean;
+  onToggle: () => void;
+  onCreateConversation?: (title: string) => Promise<string | null>;
+}
+
+// 🌟 关键修复：MessageListProps 必须包含 chatContainerRef
+interface MessageListProps {
+  messages: Message[];
+  chatContainerRef: React.RefObject<HTMLDivElement>; // 和 MessageList 组件一致
+}
+
+// 修复 MessageInputProps（移除多余的流式开关属性）
+interface MessageInputProps {
+  models: AiModel[];
+  selectedModel: string;
+  onChangeModel: (v: string) => void;
+  showAbort: boolean;
+  onAbort: () => void;
+  onSend: (t: string) => Promise<void>;
+  onDeepThink: (t: string) => Promise<void>;
+  onUpload: (f: File) => Promise<void>;
+  loading: boolean;
+}
 
 export default function ChatPage({ params }: { params?: { id?: string } }) {
+  const router = useRouter();
   const { user, isLoggedIn, loading: authLoading } = useAuth();
-  const { isSmallScreen, isSidebarOpen, setIsSidebarOpen } = useViewport();
+  const { isSidebarOpen, setIsSidebarOpen } = useViewport();
   const { models, selected, setSelected } = useModels();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // 未登录跳转
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      router.push('/login');
+    }
+  }, [authLoading, isLoggedIn, router]);
+
+  if (authLoading || !isLoggedIn) {
+    return <FullScreenSpin />;
+  }
+
+  // 初始化 useChat
   const {
     messages,
     isLoading,
-    fileInputRef,
-    enableStream,
-    setEnableStream,
     streamAbortController,
+    chatContainerRef,
     loadMessages,
     sendText,
     sendDeepThink,
     uploadFile,
     abortStream,
-    sendSyncMessage
+    createConversation,
   } = useChat(params?.id, user?.id || '');
 
+  // 加载历史消息
   useEffect(() => {
-    if (params?.id) loadMessages(params.id);
-  }, [params?.id]);
-
-  if (authLoading || !isLoggedIn) return <FullScreenSpin />;
+    if (params?.id && isLoggedIn) {
+      loadMessages(params.id);
+    }
+  }, [params?.id, isLoggedIn]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-gradient-to-br from-teal-900/98 to-teal-800/95">
-      {/* 侧边栏：位置/逻辑不变 */}
-      <Sidebar isOpen={sidebarOpen} />
+      {/* 侧边栏 - 类型匹配 */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen(prev => !prev)}
+        onCreateConversation={createConversation}
+      />
 
-      {/* 主内容容器：统一高透明背景 + 极浅边框，适配暗背景 */}
+      {/* 主聊天区域 */}
       <div className="flex-1 flex flex-col bg-white/5 backdrop-blur-xl border border-teal-700/10 rounded-2xl overflow-hidden m-3 shadow-lg shadow-teal-900/5">
-        {/* Header：逻辑不变，样式已适配暗背景 */}
         <Header
           title={params?.id ? `对话 ${params.id.slice(-6)}` : '新建对话'}
-          onToggleSidebar={() => setSidebarOpen(o => !o)}
+          onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
         />
-        {/* MessageList：统一高透明背景 */}
-        <MessageList messages={messages} />
-        {/* MessageInput：去掉上边框/上圆角，统一高透明 */}
-        <div className="border-t-0 rounded-t-none">
+
+        {/* 消息列表 - 现在属性匹配 */}
+        <MessageList
+          messages={messages}
+          chatContainerRef={chatContainerRef}
+        />
+
+        {/* 输入区域 - 移除多余的流式开关属性 */}
+        <div className="border-t border-teal-700/20 p-4 bg-white/10">
           <MessageInput
             models={models}
             selectedModel={selected}
             onChangeModel={setSelected}
-            enableStream={enableStream}
-            onToggleStream={() => setEnableStream(p => !p)}
             showAbort={!!streamAbortController}
             onAbort={abortStream}
-            onSend={t => sendText(t, selected)}
-            onDeepThink={t => sendDeepThink(t, selected)}
-            onUpload={f => uploadFile(f, selected)}
+            onSend={(text) => sendText(text, selected)}
+            onDeepThink={(text) => sendDeepThink(text, selected)}
+            onUpload={(file) => uploadFile(file, selected)}
             loading={isLoading}
           />
         </div>

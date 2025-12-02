@@ -7,8 +7,8 @@ import { AuthProvider } from '@/components/hooks/useAuth';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: '人世间AI助手',
-  description: '洞察世间百态，智答生活万千',
+  title: '天游AI助手',
+  description: '海纳百川，智汇人间',
 };
 
 export default function RootLayout({

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import axiosInstance from '@/utils/axiosInstance';
 import { useAuth } from '@/components/hooks/useAuth';
 
+// 极简类型定义
 interface LoginFormState {
   email: string;
   password: string;
@@ -19,34 +20,42 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
     setError('');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { email, password } = form;
-    if (!email.trim() || !password.trim()) {
+    if (!form.email.trim() || !form.password.trim()) {
       setError('邮箱或密码不能为空');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await axiosInstance.post('/auth/login', {
-        email: email.trim(),
-        password: password.trim(),
+      // 直接请求，不指定复杂泛型，避免TS类型冲突
+      const res: any = await axiosInstance.post('/auth/login', {
+        email: form.email.trim(),
+        password: form.password.trim(),
       });
-      const { code, message, data, accessToken, tokenExpires } = res;
-      const { accessToken: token, user } = data;
-      if (code !== 200) throw new Error(message || '登录失败');
-      localStorage.setItem('accessToken', token as string);
-      login(token as string, '', user);
+
+      // 极简数据读取：直接按层级索引，杜绝解构错误
+      if (res.code !== 200) throw new Error(res.message || '登录失败');
+      const token = res.data?.accessToken;
+      const user = res.data?.user;
+
+      if (!token || !user) throw new Error('未返回用户信息或Token');
+      
+      // 调用login（仅传2个参数，无多余值）
+      login(token, user);
       router.push('/chat');
     } catch (err: any) {
-      console.error('❌ 登录失败:', err);
-      setError(err.response?.status === 401 ? '邮箱或密码错误' : err.message || '登录失败');
+      console.error('登录失败:', err);
+      setError(
+        err.response?.status === 401 
+          ? '邮箱或密码错误' 
+          : err.message || '登录失败'
+      );
     } finally {
       setLoading(false);
     }
@@ -56,17 +65,15 @@ export default function LoginPage() {
     if (isLoggedIn) router.push('/chat');
   }, [isLoggedIn, router]);
 
+  // 保留所有UI样式，无任何修改
   return (
   <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-teal-100 via-white to-cyan-100">
-    {/* 淡青玻璃舱 - 压暗 1 档，更柔和 */}
     <div className="w-full max-w-md bg-white/60 backdrop-blur rounded-3xl shadow-xl border border-teal-200/60 p-10 transition-all hover:shadow-teal-300/30">
-      {/* 标题 - 压暗 1 档 */}
       <div className="text-center mb-10">
         <h1 className="text-3xl font-bold text-teal-700 tracking-tight">欢迎回来</h1>
         <p className="text-sm text-teal-600 mt-2">输入邮箱和密码登录系统</p>
       </div>
 
-      {/* 表单舱 - 保持你原来的结构，仅压暗背景 */}
       <form onSubmit={handleLogin} className="space-y-8">
         <div className="relative">
           <input
@@ -74,18 +81,7 @@ export default function LoginPage() {
             name="email"
             value={form.email}
             onChange={handleChange}
-            className="
-              w-full rounded-xl px-4 py-3 border
-              bg-teal-50/60
-              text-teal-800
-              border-teal-200
-              placeholder:text-teal-400/70
-              focus:bg-teal-100
-              focus:border-teal-400
-              focus:ring-2 focus:ring-teal-300/50
-              outline-none
-              transition-all duration-200
-            "
+            className="w-full rounded-xl px-4 py-3 border bg-teal-50/60 text-teal-800 border-teal-200 placeholder:text-teal-400/70 focus:bg-teal-100 focus:border-teal-400 focus:ring-2 focus:ring-teal-300/50 outline-none transition-all duration-200"
             placeholder="注册邮箱"
             disabled={loading}
             autoComplete="email"
@@ -99,18 +95,7 @@ export default function LoginPage() {
             name="password"
             value={form.password}
             onChange={handleChange}
-            className="
-              w-full rounded-xl px-4 py-3 border
-              bg-teal-50/60
-              text-teal-800
-              border-teal-200
-              placeholder:text-teal-400/70
-              focus:bg-teal-100
-              focus:border-teal-400
-              focus:ring-2 focus:ring-teal-300/50
-              outline-none
-              transition-all duration-200
-            "
+            className="w-full rounded-xl px-4 py-3 border bg-teal-50/60 text-teal-800 border-teal-200 placeholder:text-teal-400/70 focus:bg-teal-100 focus:border-teal-400 focus:ring-2 focus:ring-teal-300/50 outline-none transition-all duration-200"
             placeholder="密码"
             disabled={loading}
             autoComplete="current-password"
@@ -151,5 +136,4 @@ export default function LoginPage() {
     </div>
   </div>
 );
-
 }

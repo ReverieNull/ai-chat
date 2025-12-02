@@ -1,6 +1,6 @@
 export interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant'| 'system';
   type: 'text' | 'file' | 'deep_think';
   content: string;
   conversationId: string;

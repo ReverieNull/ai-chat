@@ -8,7 +8,7 @@ export default function Loading() {
       
       {/* 古风加载文案（贴合整体定位） */}
       <p className="text-xl text-teal-700 font-light tracking-wide">
-        人世事繁多，AI正在思考...
+        人世事繁多，天游正在思考...
       </p>
     </div>
   );

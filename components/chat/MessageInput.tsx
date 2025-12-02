@@ -7,11 +7,10 @@ interface Props {
   models: AiModel[];
   selectedModel: string;
   onChangeModel: (v: string) => void;
-  enableStream: boolean;
-  onToggleStream: () => void;
+
   showAbort: boolean;
   onAbort: () => void;
-  onSend: (text: string) => void;
+  onSend: (text: string) => void; // 仅接收文本，路由逻辑移到ChatPage
   onDeepThink: (text: string) => void;
   onUpload: (file: File) => void;
   loading: boolean;
@@ -21,8 +20,6 @@ export default function MessageInput({
   models,
   selectedModel,
   onChangeModel,
-  enableStream,
-  onToggleStream,
   showAbort,
   onAbort,
   onSend,
@@ -35,9 +32,10 @@ export default function MessageInput({
   const [deepThinkOn, setDeepThinkOn] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // 简化submit：仅调用外部传递的onSend
   const submit = () => {
-    if (!text.trim()) return;
-    onSend(text);
+    if (!text.trim() || loading) return;
+    onSend(text); // 外部已处理路由+存储逻辑
     setText('');
   };
 
@@ -68,9 +66,7 @@ export default function MessageInput({
   };
 
   return (
-
     <div className="p-5 bg-white/5 backdrop-blur-xl space-y-4 rounded-b-2xl">
-      {/* 输入框：优化背景/文字/边框，适配暗背景+高透明 */}
       <div className="flex gap-3">
         <textarea
           className="
@@ -99,7 +95,6 @@ export default function MessageInput({
         </button>
       </div>
 
-      {/* 功能行：优化按钮背景/文字，适配高透明 */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <label className="cursor-pointer">
@@ -137,8 +132,6 @@ export default function MessageInput({
           models={models}
           selected={selectedModel}
           onChange={onChangeModel}
-          enableStream={enableStream}
-          onToggleStream={onToggleStream}
           showAbort={showAbort}
           onAbort={onAbort}
         />
